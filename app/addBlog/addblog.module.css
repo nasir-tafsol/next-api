@@ -1,0 +1,10 @@
+.formInputDesign {
+  margin-bottom: 20px;
+}
+
+.actionBtns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
