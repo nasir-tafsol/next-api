@@ -14,6 +14,7 @@ export default function AddBlog() {
   const [posts, setPosts] = useState([]);
   const [isEditing, setIsEditing] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const getData = async () => {
     setIsLoading(true);
@@ -29,7 +30,7 @@ export default function AddBlog() {
     }
   };
 
-  const addPosts = async (query, id) => {
+  const addPosts = async () => {
     let dataSet = {
       title: postTitle,
       body: postDesc,
@@ -37,31 +38,31 @@ export default function AddBlog() {
     };
     for (const key in dataSet) {
       const value = dataSet[key];
-      if (typeof value !== "string" || value.trim() === "") {
+      if (!dataSet[key]) {
         return toast.error(`${key} is required `);
       }
     }
     setIsLoading(true);
     try {
-      const url = query
-        ? "https://dummyjson.com/posts/add"
-        : `https://dummyjson.com/posts/${id}`;
-      const method = query ? "post" : "put";
+      const url = selectedItem
+        ? `https://dummyjson.com/posts/${selectedItem?.userId}`
+        : "https://dummyjson.com/posts/add";
 
-      const response = await axios({
-        method: method,
-        url: url,
-        data: dataSet,
-      });
+      const response = selectedItem
+        ? await axios.put(url, dataSet)
+        : await axios.post(url, dataSet);
       if (response.data) {
         const updatedPost = response.data;
-        if (query) {
-          setPosts((prev) => [response.data, ...prev]);
+        console.log(updatedPost.id, "Updated Posts");
+        if (!selectedItem) {
+          setPosts((prev) => [updatedPost, ...prev]);
           toast.success("Post added successfully");
           resetForm();
         } else {
           setPosts((prev) => {
-            const index = prev.findIndex((item) => item.userId === id);
+            const index = prev.findIndex(
+              (item) => item.userId === updatedPost.userId
+            );
             if (index !== -1) {
               const newPosts = [...prev];
               newPosts[index] = updatedPost;
@@ -93,11 +94,8 @@ export default function AddBlog() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (isEditing) {
-      addPosts(false, isEditing);
-    } else {
-      addPosts(true);
-    }
+    addPosts();
+    console.log("Submit Handle");
   };
 
   const handleUpdate = (item) => {
@@ -112,6 +110,7 @@ export default function AddBlog() {
     setPostDesc("");
     setPostUserId("");
     setIsEditing(null);
+    setSelectedItem(null);
   };
 
   useEffect(() => {
@@ -181,7 +180,13 @@ export default function AddBlog() {
               <td>{item.body}</td>
               <td>
                 <div className={classes.actionBtns}>
-                  <Button variant="success" onClick={() => handleUpdate(item)}>
+                  <Button
+                    variant="success"
+                    onClick={() => {
+                      setSelectedItem(item);
+                      handleUpdate(item);
+                    }}
+                  >
                     Update
                   </Button>
                   <Button
